@@ -5,12 +5,18 @@ on:
     branches: [ main ]
   workflow_dispatch:  # دستی اجرا کردن
   schedule:
-    - cron: '0 */5 * * *'  # هر 5 ساعت ریستارت
+    # هر 5 ساعت تریگر میشه تا بات همیشه فعال باشه
+    # ساعت 0, 5, 10, 15, 20 هر روز (UTC)
+    - cron: '0 0,5,10,15,20 * * *'
 
 jobs:
   run-bot:
     runs-on: ubuntu-latest
-    timeout-minutes: 350  # حداکثر ~6 ساعت
+    timeout-minutes: 270  # 4.5 ساعت - کمی کمتر از 5 ساعت
+    # فقط یک instance در هر زمان اجرا بشه
+    concurrency:
+      group: telegram-bot
+      cancel-in-progress: false  # قبلی رو cancel نکن، جدید skip میشه
 
     steps:
     - name: Checkout code
