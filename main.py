@@ -611,6 +611,11 @@ def get_user_effective_role(user: Optional[dict]) -> str:
     if not user.get("is_active", True):
         return "blocked"
     role = (user.get("role") or "").strip().lower()
+    
+    # تبدیل نقش‌های قدیمی
+    if role == "supervisor":
+        role = "admin"
+    
     if role in ROLE_LEVELS:
         return role
     return "admin" if user.get("is_admin") else "user"
@@ -640,10 +645,26 @@ def _db_fetch_user_by_username(username: str) -> Optional[dict]:
     if not norm:
         return None
     try:
+        # جستجو با تمام حالت‌های ممکن
+        variants = [
+            norm, 
+            f"@{norm}", 
+            norm.lower(), 
+            f"@{norm.lower()}",
+            norm.upper(),
+            f"@{norm.upper()}"
+        ]
         res = supabase.table("allowed_users").select("*").in_(
-            "telegram_username", [norm, f"@{norm}", norm.lower(), f"@{norm.lower()}"]
-        ).limit(1).execute()
-        return res.data[0] if res.data else None
+            "telegram_username", variants
+        ).execute()
+        
+        if res.data:
+            # اولویت با owner
+            for user in res.data:
+                if user.get("role") == "owner":
+                    return user
+            return res.data[0]
+        return None
     except Exception as e:
         logger.error("خطا در fetch user: %s", e)
         return None
@@ -1196,6 +1217,11 @@ async def is_admin_telegram_user(tg_user) -> bool:
     # مالک اصلی - همیشه دسترسی کامل دارد
     if norm == "omiddshojaei":
         return True
+    
+    # پاک کردن کش برای اطمینان از داده تازه
+    cache_key = f"user:{norm}"
+    user_cache.cache.pop(cache_key, None)
+    
     user_row = await fetch_allowed_user(username)
     if not user_row:
         return False
@@ -1489,16 +1515,17 @@ async def groups_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         return
 
-    # پاک کردن کش برای مالک
     norm = normalize_username(tg_user.username)
-    if norm == "omiddshojaei":
-        user_cache.cache.clear()  # پاک کردن کش
+    
+    # پاک کردن کش برای جلوگیری از داده‌های قدیمی
+    cache_key = f"user:{norm}"
+    user_cache.cache.pop(cache_key, None)
     
     allowed = await fetch_allowed_user(tg_user.username)
     
     # bypass برای مالک اصلی
     if not allowed and norm == "omiddshojaei":
-        allowed = {"telegram_username": "omiddshojaei", "role": "owner", "is_admin": True, "allow_all_groups": True}
+        allowed = {"telegram_username": "omiddshojaei", "role": "owner", "is_admin": True, "allow_all_groups": True, "is_active": True}
     
     if not allowed:
         await context.bot.send_message(chat_id=chat_id, text="شما در لیست کاربران مجاز نیستید.")
@@ -2281,7 +2308,7 @@ async def callback_query_handler(update: Update, context: ContextTypes.DEFAULT_T
             
             buttons = [
                 [InlineKeyboardButton(f"{ROLE_ICONS[r]} {ROLE_LABELS[r]}", callback_data=f"admin|setrole|{r}|{db_id}")]
-                for r in ["owner", "admin", "supervisor", "user", "blocked"]
+                for r in ["owner", "admin", "user", "blocked"]
             ]
             buttons.append([InlineKeyboardButton("❌ انصراف", callback_data=f"admin|user|{db_id}")])
             
