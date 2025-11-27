@@ -468,12 +468,14 @@ async def init_log_queue():
 
 
 async def log_worker():
+    """Background worker for processing log entries."""
     while True:
+        row = None
         try:
             row = await log_queue.get()
             await asyncio.to_thread(_insert_log_row, row)
             log_queue.task_done()
-    except Exception as e:
+        except Exception as e:
             logger.error("خطا در log_worker: %s", e)
             await asyncio.sleep(1)
 
@@ -500,68 +502,67 @@ async def queue_log(update: Update):
 
 
 def _build_log_row(update: Update) -> Optional[dict]:
+    """Build a log row from an Update object."""
     now = int(time.time())
-    
-        if update.message:
-            msg = update.message
-            chat = msg.chat
-            from_user = msg.from_user
+    if update.message:
+        msg = update.message
+        chat = msg.chat
+        from_user = msg.from_user
         return {
-                "update_id": update.update_id,
-                "update_type": "message",
-                "chat_id": chat.id,
-                "chat_type": chat.type,
-                "chat_title": chat.title,
-                "message_id": msg.message_id,
-                "from_id": from_user.id if from_user else None,
-                "from_is_bot": from_user.is_bot if from_user else None,
-                "username": from_user.username if from_user else None,
-                "first_name": from_user.first_name if from_user else None,
-                "last_name": from_user.last_name if from_user else None,
-                "language_code": from_user.language_code if from_user else None,
-                "text": msg.text,
-                "caption": msg.caption,
-                "callback_data": None,
+            "update_id": update.update_id,
+            "update_type": "message",
+            "chat_id": chat.id,
+            "chat_type": chat.type,
+            "chat_title": chat.title,
+            "message_id": msg.message_id,
+            "from_id": from_user.id if from_user else None,
+            "from_is_bot": from_user.is_bot if from_user else None,
+            "username": from_user.username if from_user else None,
+            "first_name": from_user.first_name if from_user else None,
+            "last_name": from_user.last_name if from_user else None,
+            "language_code": from_user.language_code if from_user else None,
+            "text": msg.text,
+            "caption": msg.caption,
+            "callback_data": None,
             "reply_to_message_id": msg.reply_to_message.message_id if msg.reply_to_message else None,
-                "media_type": None,
-                "file_id": None,
-                "entities": msg.to_dict().get("entities"),
+            "media_type": None,
+            "file_id": None,
+            "entities": msg.to_dict().get("entities"),
             "date_ts": int(msg.date.timestamp()) if msg.date else now,
-                "date": datetime.utcnow().isoformat(),
-                "raw": update.to_dict(),
-            }
-
+            "date": datetime.utcnow().isoformat(),
+            "raw": update.to_dict(),
+        }
     if update.callback_query:
-            cq = update.callback_query
-            msg = cq.message
-            chat = msg.chat if msg else None
-            from_user = cq.from_user
+        cq = update.callback_query
+        msg = cq.message
+        chat = msg.chat if msg else None
+        from_user = cq.from_user
         return {
-                "update_id": update.update_id,
-                "update_type": "callback_query",
-                "chat_id": chat.id if chat else None,
-                "chat_type": chat.type if chat else None,
-                "chat_title": chat.title if chat else None,
-                "message_id": msg.message_id if msg else None,
-                "from_id": from_user.id if from_user else None,
-                "from_is_bot": from_user.is_bot if from_user else None,
-                "username": from_user.username if from_user else None,
-                "first_name": from_user.first_name if from_user else None,
-                "last_name": from_user.last_name if from_user else None,
-                "language_code": from_user.language_code if from_user else None,
-                "text": msg.text if msg else None,
-                "caption": None,
-                "callback_data": cq.data,
+            "update_id": update.update_id,
+            "update_type": "callback_query",
+            "chat_id": chat.id if chat else None,
+            "chat_type": chat.type if chat else None,
+            "chat_title": chat.title if chat else None,
+            "message_id": msg.message_id if msg else None,
+            "from_id": from_user.id if from_user else None,
+            "from_is_bot": from_user.is_bot if from_user else None,
+            "username": from_user.username if from_user else None,
+            "first_name": from_user.first_name if from_user else None,
+            "last_name": from_user.last_name if from_user else None,
+            "language_code": from_user.language_code if from_user else None,
+            "text": msg.text if msg else None,
+            "caption": None,
+            "callback_data": cq.data,
             "reply_to_message_id": msg.reply_to_message.message_id if msg and msg.reply_to_message else None,
-                "media_type": None,
-                "file_id": None,
-                "entities": msg.to_dict().get("entities") if msg else None,
+            "media_type": None,
+            "file_id": None,
+            "entities": msg.to_dict().get("entities") if msg else None,
             "date_ts": now,
-                "date": datetime.utcnow().isoformat(),
-                "raw": update.to_dict(),
-            }
-    
+            "date": datetime.utcnow().isoformat(),
+            "raw": update.to_dict(),
+        }
     return None
+
 
 
 # ─────────────────────────────────────────────────────────────────
@@ -1409,11 +1410,11 @@ async def text_message_handler(update: Update, context: ContextTypes.DEFAULT_TYP
         
         # بررسی دسترسی کاربر
         if not tg_user.username:
-        await context.bot.send_message(
-            chat_id=chat_id,
+            await context.bot.send_message(
+                chat_id=chat_id,
                 text=t("need_username", lang)
-        )
-        return
+            )
+            return
 
         allowed = await fetch_allowed_user(tg_user.username)
         if not allowed or get_user_effective_role(allowed) == "blocked":
@@ -1665,7 +1666,7 @@ async def callback_query_handler(update: Update, context: ContextTypes.DEFAULT_T
         settings = await get_user_settings(tg_user.id)
         lang = settings.get("language", "fa")
         await query.edit_message_text(t("admin_menu", lang), reply_markup=build_admin_main_keyboard(lang))
-            return
+        return
 
     # انتخاب نوع گزارش (هفتگی/ماهانه)
     if data.startswith("rpt|"):
@@ -1846,7 +1847,7 @@ async def callback_query_handler(update: Update, context: ContextTypes.DEFAULT_T
             buttons = []
             for u in filtered[start:end]:
                 username = u.get("telegram_username") or "-"
-                    norm = normalize_username(username) or username
+                norm = normalize_username(username) or username
                 label = f"@{norm}" if norm != "-" else "(بدون یوزرنیم)"
                 buttons.append([InlineKeyboardButton(label, callback_data=f"admin|user|{u.get('id')}")])
             
@@ -1863,11 +1864,11 @@ async def callback_query_handler(update: Update, context: ContextTypes.DEFAULT_T
             buttons.append([InlineKeyboardButton("➕ افزودن کاربر", callback_data=f"admin|adduser|{role_key}")])
             buttons.append([InlineKeyboardButton("🔙 بازگشت", callback_data="admin|access")])
             
-                await query.edit_message_text(
+            await query.edit_message_text(
                 f"کاربران {ROLE_LABELS.get(role_key)} ({len(filtered)} نفر):",
                 reply_markup=InlineKeyboardMarkup(buttons)
-                )
-                return
+            )
+            return
 
         # افزودن کاربر
         if len(parts) == 3 and parts[1] == "adduser":
@@ -2109,7 +2110,7 @@ async def callback_query_handler(update: Update, context: ContextTypes.DEFAULT_T
                 db_id = int(parts[2])
             except ValueError:
                 await query.edit_message_text("شناسه نامعتبر.")
-                    return
+                return
             
             row = await asyncio.to_thread(_db_get_user_by_db_id, db_id)
             if not row:
@@ -2240,7 +2241,7 @@ async def callback_query_handler(update: Update, context: ContextTypes.DEFAULT_T
                     [InlineKeyboardButton("🏠 منوی ادمین", callback_data="admin|back")],
                 ])
             )
-                return
+            return
 
         # گروه‌ها با آمار
         if data == "admin|groups":
@@ -2360,11 +2361,11 @@ async def callback_query_handler(update: Update, context: ContextTypes.DEFAULT_T
             logs = await asyncio.to_thread(_db_get_audit_logs, 15)
             
             if not logs:
-            await query.edit_message_text(
+                await query.edit_message_text(
                     "📄 هیچ لاگی ثبت نشده.",
                     reply_markup=build_back_keyboard("admin|back")
-            )
-            return
+                )
+                return
 
             lines = ["📄 آخرین تغییرات:\n"]
             for log in logs:
