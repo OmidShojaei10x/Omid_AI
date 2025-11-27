@@ -86,17 +86,15 @@ MAIN_REPLY_KEYBOARD = ReplyKeyboardMarkup(
 ROLE_LEVELS = {
     "owner": 4,
     "admin": 3,
-    "supervisor": 2,
     "user": 1,
     "blocked": 0,
 }
 
 ROLE_LABELS = {
-    "owner": "Owner",
-    "admin": "Admin",
-    "supervisor": "Supervisor",
-    "user": "User",
-    "blocked": "Blocked",
+    "owner": "مالک",
+    "admin": "ادمین",
+    "user": "کاربر",
+    "blocked": "مسدود",
 }
 
 # ─────────────────────────────────────────────────────────────────
@@ -371,7 +369,6 @@ async def get_user_lang(user_id: int) -> str:
 ROLE_LABELS_FA = {
     "owner": "مالک",
     "admin": "ادمین",
-    "supervisor": "ناظر",
     "user": "کاربر",
     "blocked": "مسدود",
 }
@@ -379,7 +376,6 @@ ROLE_LABELS_FA = {
 ROLE_ICONS = {
     "owner": "👑",
     "admin": "🛡",
-    "supervisor": "🧩",
     "user": "👤",
     "blocked": "🚫",
 }
@@ -395,7 +391,6 @@ ROLE_DEFAULT_PERMISSIONS = {
         "request_reports", "edit_permissions", "view_audit_logs",
         "export_data", "ai_priority_processing",
     },
-    "supervisor": {"view_reports", "request_reports"},
     "user": {"view_reports", "request_reports"},
     "blocked": set(),
 }
@@ -1130,11 +1125,10 @@ def build_admin_main_keyboard(lang: str = "fa") -> InlineKeyboardMarkup:
 
 def build_role_list_keyboard(counts: dict, lang: str = "fa") -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup([
-        [InlineKeyboardButton(f"👑 Owner ({counts.get('owner', 0)})", callback_data="admin|role|owner|0")],
-        [InlineKeyboardButton(f"🛡 Admin ({counts.get('admin', 0)})", callback_data="admin|role|admin|0")],
-        [InlineKeyboardButton(f"🧩 Supervisor ({counts.get('supervisor', 0)})", callback_data="admin|role|supervisor|0")],
-        [InlineKeyboardButton(f"👤 User ({counts.get('user', 0)})", callback_data="admin|role|user|0")],
-        [InlineKeyboardButton(f"🚫 Blocked ({counts.get('blocked', 0)})", callback_data="admin|role|blocked|0")],
+        [InlineKeyboardButton(f"👑 مالک ({counts.get('owner', 0)})", callback_data="admin|role|owner|0")],
+        [InlineKeyboardButton(f"🛡 ادمین ({counts.get('admin', 0)})", callback_data="admin|role|admin|0")],
+        [InlineKeyboardButton(f"👤 کاربر ({counts.get('user', 0)})", callback_data="admin|role|user|0")],
+        [InlineKeyboardButton(f"🚫 مسدود ({counts.get('blocked', 0)})", callback_data="admin|role|blocked|0")],
         [InlineKeyboardButton(t("back", lang), callback_data="admin|back")],
     ])
 
