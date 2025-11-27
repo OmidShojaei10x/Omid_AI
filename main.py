@@ -1193,6 +1193,7 @@ async def generate_quick_report(user_id: int) -> str:
 async def is_admin_telegram_user(tg_user) -> bool:
     username = tg_user.username
     norm = normalize_username(username)
+    # مالک اصلی - همیشه دسترسی کامل دارد
     if norm == "omiddshojaei":
         return True
     user_row = await fetch_allowed_user(username)
@@ -1488,7 +1489,16 @@ async def groups_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         return
 
+    # پاک کردن کش برای مالک
+    norm = normalize_username(tg_user.username)
+    if norm == "omiddshojaei":
+        user_cache.cache.clear()  # پاک کردن کش
+    
     allowed = await fetch_allowed_user(tg_user.username)
+    
+    # bypass برای مالک اصلی
+    if not allowed and norm == "omiddshojaei":
+        allowed = {"telegram_username": "omiddshojaei", "role": "owner", "is_admin": True, "allow_all_groups": True}
     
     if not allowed:
         await context.bot.send_message(chat_id=chat_id, text="شما در لیست کاربران مجاز نیستید.")
