@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>پنل مدیریت - سایت شخصی</title>
+    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/admin.css">
+</head>
+<body>
+    <div class="admin-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h2>🎛️ پنل مدیریت</h2>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="#posts" class="nav-item active" data-section="posts">
+                    <span>📝 پست‌های بلاگ</span>
+                </a>
+                <a href="#personal" class="nav-item" data-section="personal">
+                    <span>👤 اطلاعات شخصی</span>
+                </a>
+                <a href="#skills" class="nav-item" data-section="skills">
+                    <span>💪 مهارت‌ها</span>
+                </a>
+            </nav>
+            <div class="sidebar-footer">
+                <button id="logoutBtn" class="btn-logout">خروج</button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Posts Section -->
+            <section id="posts-section" class="content-section active">
+                <div class="section-header">
+                    <h1>📝 مدیریت پست‌های بلاگ</h1>
+                    <button class="btn-primary" id="addPostBtn">+ پست جدید</button>
+                </div>
+                <div class="posts-list" id="postsList">
+                    <!-- Posts will be loaded here -->
+                </div>
+            </section>
+
+            <!-- Personal Info Section -->
+            <section id="personal-section" class="content-section">
+                <div class="section-header">
+                    <h1>👤 اطلاعات شخصی</h1>
+                </div>
+                <div class="form-container">
+                    <form id="personalForm">
+                        <div class="form-group">
+                            <label>نام (فارسی)</label>
+                            <input type="text" name="name_fa" id="name_fa">
+                        </div>
+                        <div class="form-group">
+                            <label>نام (انگلیسی)</label>
+                            <input type="text" name="name_en" id="name_en">
+                        </div>
+                        <div class="form-group">
+                            <label>عنوان شغلی (فارسی)</label>
+                            <input type="text" name="title_fa" id="title_fa">
+                        </div>
+                        <div class="form-group">
+                            <label>عنوان شغلی (انگلیسی)</label>
+                            <input type="text" name="title_en" id="title_en">
+                        </div>
+                        <div class="form-group">
+                            <label>درباره من (فارسی)</label>
+                            <textarea name="about_fa" id="about_fa" rows="5"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>درباره من (انگلیسی)</label>
+                            <textarea name="about_en" id="about_en" rows="5"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>ایمیل</label>
+                            <input type="email" name="email" id="email">
+                        </div>
+                        <div class="form-group">
+                            <label>موقعیت</label>
+                            <input type="text" name="location" id="location">
+                        </div>
+                        <button type="submit" class="btn-primary">ذخیره تغییرات</button>
+                    </form>
+                </div>
+            </section>
+
+            <!-- Skills Section -->
+            <section id="skills-section" class="content-section">
+                <div class="section-header">
+                    <h1>💪 مدیریت مهارت‌ها</h1>
+                    <button class="btn-primary" id="addSkillBtn">+ مهارت جدید</button>
+                </div>
+                <div class="skills-list" id="skillsList">
+                    <!-- Skills will be loaded here -->
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Post Modal -->
+    <div id="postModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2 id="modalTitle">پست جدید</h2>
+            <form id="postForm">
+                <input type="hidden" id="postId">
+                <div class="form-group">
+                    <label>عنوان (فارسی)</label>
+                    <input type="text" id="post_title_fa" required>
+                </div>
+                <div class="form-group">
+                    <label>عنوان (انگلیسی)</label>
+                    <input type="text" id="post_title_en" required>
+                </div>
+                <div class="form-group">
+                    <label>خلاصه (فارسی)</label>
+                    <textarea id="post_excerpt_fa" rows="3"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>خلاصه (انگلیسی)</label>
+                    <textarea id="post_excerpt_en" rows="3"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>محتوا (فارسی)</label>
+                    <textarea id="post_content_fa" rows="10"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>محتوا (انگلیسی)</label>
+                    <textarea id="post_content_en" rows="10"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>دسته‌بندی (فارسی)</label>
+                    <input type="text" id="post_category_fa">
+                </div>
+                <div class="form-group">
+                    <label>دسته‌بندی (انگلیسی)</label>
+                    <input type="text" id="post_category_en">
+                </div>
+                <div class="form-group">
+                    <label>تاریخ</label>
+                    <input type="date" id="post_date">
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="post_published"> منتشر شده
+                    </label>
+                </div>
+                <div class="modal-actions">
+                    <button type="submit" class="btn-primary">ذخیره</button>
+                    <button type="button" class="btn-secondary" id="cancelBtn">انصراف</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="/static/js/admin.js"></script>
+</body>
+</html>
+
