@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>بلاگ | امید شجاعی</title>
+    <meta name="description" content="بلاگ شخصی امید شجاعی - مقالات و نوشته‌های من">
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700&family=Crimson+Pro:ital,wght@0,300;0,400;0,500;0,600;1,400&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="blog-style.css">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>👨‍💻</text></svg>">
+</head>
+<body>
+    <!-- Language Switcher -->
+    <button class="lang-switch" id="langSwitch" aria-label="Switch Language">
+        <span class="lang-fa">EN</span>
+        <span class="lang-en">فا</span>
+    </button>
+
+    <!-- Navigation -->
+    <nav class="nav">
+        <div class="nav-container">
+            <a href="index.html" class="nav-logo">
+                <span class="lang-fa">امید</span>
+                <span class="lang-en">Omid</span>
+            </a>
+            <button class="nav-toggle" id="navToggle" aria-label="Toggle Menu">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            <ul class="nav-menu" id="navMenu">
+                <li><a href="index.html" class="nav-link">
+                    <span class="lang-fa">خانه</span>
+                    <span class="lang-en">Home</span>
+                </a></li>
+                <li><a href="index.html#about" class="nav-link">
+                    <span class="lang-fa">درباره من</span>
+                    <span class="lang-en">About</span>
+                </a></li>
+                <li><a href="index.html#skills" class="nav-link">
+                    <span class="lang-fa">مهارت‌ها</span>
+                    <span class="lang-en">Skills</span>
+                </a></li>
+                <li><a href="blog.html" class="nav-link active">
+                    <span class="lang-fa">بلاگ</span>
+                    <span class="lang-en">Blog</span>
+                </a></li>
+                <li><a href="index.html#contact" class="nav-link">
+                    <span class="lang-fa">تماس</span>
+                    <span class="lang-en">Contact</span>
+                </a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Blog Header -->
+    <header class="blog-header">
+        <div class="container">
+            <h1 class="blog-header-title">
+                <span class="lang-fa">بلاگ</span>
+                <span class="lang-en">Blog</span>
+            </h1>
+            <p class="blog-header-description">
+                <span class="lang-fa">نوشته‌ها، تجربیات و آموزش‌های من در دنیای برنامه‌نویسی</span>
+                <span class="lang-en">My writings, experiences and tutorials in the world of programming</span>
+            </p>
+        </div>
+    </header>
+
+    <!-- Blog Posts -->
+    <main class="blog-main">
+        <div class="container">
+            <div class="blog-posts">
+                <!-- Post 1 -->
+                <article class="blog-post-card">
+                    <div class="blog-post-image">
+                        <div class="blog-post-placeholder">📝</div>
+                    </div>
+                    <div class="blog-post-content">
+                        <div class="blog-post-meta">
+                            <span class="blog-post-category">
+                                <span class="lang-fa">برنامه‌نویسی</span>
+                                <span class="lang-en">Programming</span>
+                            </span>
+                            <span class="blog-post-date">
+                                <span class="lang-fa">۲۵ آبان ۱۴۰۴</span>
+                                <span class="lang-en">Nov 15, 2025</span>
+                            </span>
+                        </div>
+                        <h2 class="blog-post-title">
+                            <a href="blog/post-1.html">
+                                <span class="lang-fa">شروع سفر برنامه‌نویسی</span>
+                                <span class="lang-en">Starting the Programming Journey</span>
+                            </a>
+                        </h2>
+                        <p class="blog-post-excerpt">
+                            <span class="lang-fa">در این پست درباره تجربیات اولیه من در دنیای برنامه‌نویسی می‌نویسم و نکاتی که آرزو می‌کردم کسی از اول بهم می‌گفت...</span>
+                            <span class="lang-en">In this post, I write about my initial experiences in the world of programming and tips I wish someone had told me from the beginning...</span>
+                        </p>
+                        <a href="blog/post-1.html" class="blog-post-link">
+                            <span class="lang-fa">ادامه مطلب</span>
+                            <span class="lang-en">Read More</span>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M5 12h14M12 5l7 7-7 7"/>
+                            </svg>
+                        </a>
+                    </div>
+                </article>
+
+                <!-- Post 2 -->
+                <article class="blog-post-card">
+                    <div class="blog-post-image">
+                        <div class="blog-post-placeholder">🤖</div>
+                    </div>
+                    <div class="blog-post-content">
+                        <div class="blog-post-meta">
+                            <span class="blog-post-category">
+                                <span class="lang-fa">آموزش</span>
+                                <span class="lang-en">Tutorial</span>
+                            </span>
+                            <span class="blog-post-date">
+                                <span class="lang-fa">۲۰ آبان ۱۴۰۴</span>
+                                <span class="lang-en">Nov 10, 2025</span>
+                            </span>
+                        </div>
+                        <h2 class="blog-post-title">
+                            <a href="blog/post-2.html">
+                                <span class="lang-fa">ساخت ربات تلگرام با پایتون</span>
+                                <span class="lang-en">Building Telegram Bot with Python</span>
+                            </a>
+                        </h2>
+                        <p class="blog-post-excerpt">
+                            <span class="lang-fa">آموزش قدم به قدم ساخت یک ربات تلگرام حرفه‌ای با استفاده از پایتون و کتابخانه python-telegram-bot...</span>
+                            <span class="lang-en">Step by step tutorial for building a professional Telegram bot using Python and the python-telegram-bot library...</span>
+                        </p>
+                        <a href="blog/post-2.html" class="blog-post-link">
+                            <span class="lang-fa">ادامه مطلب</span>
+                            <span class="lang-en">Read More</span>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M5 12h14M12 5l7 7-7 7"/>
+                            </svg>
+                        </a>
+                    </div>
+                </article>
+
+                <!-- Post 3 -->
+                <article class="blog-post-card">
+                    <div class="blog-post-image">
+                        <div class="blog-post-placeholder">💡</div>
+                    </div>
+                    <div class="blog-post-content">
+                        <div class="blog-post-meta">
+                            <span class="blog-post-category">
+                                <span class="lang-fa">نکات</span>
+                                <span class="lang-en">Tips</span>
+                            </span>
+                            <span class="blog-post-date">
+                                <span class="lang-fa">۱۵ آبان ۱۴۰۴</span>
+                                <span class="lang-en">Nov 5, 2025</span>
+                            </span>
+                        </div>
+                        <h2 class="blog-post-title">
+                            <a href="blog/post-3.html">
+                                <span class="lang-fa">نکات کاربردی برنامه‌نویسی</span>
+                                <span class="lang-en">Practical Programming Tips</span>
+                            </a>
+                        </h2>
+                        <p class="blog-post-excerpt">
+                            <span class="lang-fa">مجموعه‌ای از نکات کاربردی که هر برنامه‌نویس باید بداند. از مدیریت زمان تا نوشتن کد تمیز...</span>
+                            <span class="lang-en">A collection of practical tips every programmer should know. From time management to writing clean code...</span>
+                        </p>
+                        <a href="blog/post-3.html" class="blog-post-link">
+                            <span class="lang-fa">ادامه مطلب</span>
+                            <span class="lang-en">Read More</span>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M5 12h14M12 5l7 7-7 7"/>
+                            </svg>
+                        </a>
+                    </div>
+                </article>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>
+                <span class="lang-fa">ساخته شده با ❤️ توسط امید شجاعی</span>
+                <span class="lang-en">Made with ❤️ by Omid Shojaei</span>
+            </p>
+            <p class="footer-copyright">© 2025</p>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
+
