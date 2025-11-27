@@ -365,9 +365,8 @@ def t(key: str, lang: str = "fa", **kwargs) -> str:
     return text
 
 async def get_user_lang(user_id: int) -> str:
-    """دریافت زبان کاربر"""
-    settings = await get_user_settings(user_id)
-    return settings.get("language", "fa")
+    """دریافت زبان کاربر - همیشه فارسی"""
+    return "fa"
 
 ROLE_LABELS_FA = {
     "owner": "مالک",
@@ -1181,7 +1180,6 @@ def build_user_settings_keyboard(settings: dict, lang: str = None) -> InlineKeyb
     back_label = "🔙 Back" if lang == "en" else "🔙 بازگشت"
     
     return InlineKeyboardMarkup([
-        [InlineKeyboardButton(f"{lang_label}: {lang_text}", callback_data="settings|language")],
         [InlineKeyboardButton(f"{notif_label}: {notif_text}", callback_data="settings|notifications")],
         [InlineKeyboardButton(f"{date_label}: {date_text}", callback_data="settings|date_format")],
         [InlineKeyboardButton(f"{page_label}: {page_size}", callback_data="settings|page_size")],
@@ -1197,7 +1195,6 @@ def build_admin_settings_keyboard(bot_settings: dict) -> InlineKeyboardMarkup:
     
     return InlineKeyboardMarkup([
         [InlineKeyboardButton("✏️ پیام خوش‌آمدگویی", callback_data="admin|settings|welcome")],
-        [InlineKeyboardButton(f"🌐 زبان پیش‌فرض: {LANGUAGE_OPTIONS.get(default_lang, default_lang)}", callback_data="admin|settings|default_lang")],
         [InlineKeyboardButton("📊 تنظیمات گزارش", callback_data="admin|settings|reports")],
         [InlineKeyboardButton("🔔 تنظیمات نوتیفیکیشن", callback_data="admin|settings|notif")],
         [InlineKeyboardButton("🔙 بازگشت", callback_data="admin|back")],
@@ -2308,30 +2305,6 @@ async def callback_query_handler(update: Update, context: ContextTypes.DEFAULT_T
             )
             return
         
-        # تنظیمات ادمین - زبان پیش‌فرض
-        if data == "admin|settings|default_lang":
-            await query.edit_message_text(
-                "🌐 زبان پیش‌فرض بات:",
-                reply_markup=InlineKeyboardMarkup([
-                    [InlineKeyboardButton("🇮🇷 فارسی", callback_data="admin|setlang|fa")],
-                    [InlineKeyboardButton("🇬🇧 English", callback_data="admin|setlang|en")],
-                    [InlineKeyboardButton("🔙 بازگشت", callback_data="admin|settings")],
-                ])
-            )
-            return
-        
-        # تنظیم زبان پیش‌فرض
-        if len(parts) == 3 and parts[1] == "setlang":
-            new_lang = parts[2]
-            bot_settings = await asyncio.to_thread(_db_get_bot_settings)
-            bot_settings["default_language"] = new_lang
-            await asyncio.to_thread(_db_save_bot_settings, bot_settings)
-            await query.edit_message_text(
-                f"✅ زبان پیش‌فرض به {LANGUAGE_OPTIONS.get(new_lang, new_lang)} تغییر کرد.",
-                reply_markup=build_back_keyboard("admin|settings")
-            )
-            return
-        
         # تنظیمات گزارش
         if data == "admin|settings|reports":
             await query.edit_message_text(
@@ -2402,18 +2375,6 @@ async def callback_query_handler(update: Update, context: ContextTypes.DEFAULT_T
         if data == "settings|back":
             await clear_pending_mode(tg_user.id)
             await query.edit_message_text("عملیات لغو شد.")
-            return
-        
-        # تغییر زبان
-        if data == "settings|language":
-            await query.edit_message_text(
-                "🌐 انتخاب زبان:",
-                reply_markup=InlineKeyboardMarkup([
-                    [InlineKeyboardButton("🇮🇷 فارسی", callback_data="setlang|fa")],
-                    [InlineKeyboardButton("🇬🇧 English", callback_data="setlang|en")],
-                    [InlineKeyboardButton("🔙 بازگشت", callback_data="settings|main")],
-                ])
-            )
             return
         
         # تغییر نوتیفیکیشن
@@ -2487,17 +2448,6 @@ async def callback_query_handler(update: Update, context: ContextTypes.DEFAULT_T
             return
     
     # اعمال تنظیمات کاربر
-    if data.startswith("setlang|"):
-        new_lang = data.split("|")[1]
-        await save_user_setting(tg_user.id, "language", new_lang)
-        settings = await get_user_settings(tg_user.id)
-        # استفاده از زبان جدید برای نمایش پیام
-        await query.edit_message_text(
-            t("lang_changed", new_lang, lang_name=LANGUAGE_OPTIONS.get(new_lang, new_lang)),
-            reply_markup=build_user_settings_keyboard(settings, new_lang)
-        )
-        return
-    
     if data.startswith("setnotif|"):
         value = data.split("|")[1] == "on"
         await save_user_setting(tg_user.id, "notifications", value)
