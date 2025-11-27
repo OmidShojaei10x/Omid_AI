@@ -65,23 +65,35 @@ logger = logging.getLogger("telesummary-bot")
 # تعداد آیتم در هر صفحه
 PAGE_SIZE = 5
 
-BUTTON_HOME = "🏠 منوی اصلی"
+BUTTON_HOME = "🏠 خانه"
+BUTTON_QUICK_REPORT = "⚡ گزارش سریع"
 BUTTON_REPORTS = "📊 گزارش‌ها"
 BUTTON_GROUPS = "💬 گروه‌ها"
 BUTTON_SETTINGS = "⚙️ تنظیمات"
 BUTTON_HELP = "❓ راهنما"
-BUTTON_PROFILE = "👤 پروفایل من"
+BUTTON_PROFILE = "👤 پروفایل"
+BUTTON_MANAGE = "👥 مدیریت"
 BUTTON_CANCEL = "❌ انصراف"
 
+# منوی ساده شده - ۳ ردیف اصلی
 MAIN_REPLY_KEYBOARD = ReplyKeyboardMarkup(
     [
-        [KeyboardButton(BUTTON_HOME), KeyboardButton(BUTTON_PROFILE)],
-        [KeyboardButton(BUTTON_REPORTS), KeyboardButton(BUTTON_GROUPS)],
-        [KeyboardButton(BUTTON_SETTINGS), KeyboardButton(BUTTON_HELP)],
+        [KeyboardButton(BUTTON_QUICK_REPORT), KeyboardButton(BUTTON_HOME)],
+        [KeyboardButton(BUTTON_MANAGE), KeyboardButton(BUTTON_SETTINGS)],
     ],
     resize_keyboard=True,
     one_time_keyboard=False,
 )
+
+# کلمات کلیدی نارضایتی مشتری
+DISSATISFACTION_KEYWORDS = [
+    "ناراضی", "نارضایتی", "شکایت", "بد بود", "افتضاح", "مشکل دارم",
+    "پاسخگو نیستید", "جواب نمیدید", "کیفیت پایین", "خراب", "ضعیف",
+    "قابل قبول نیست", "انصراف", "لغو", "برگشت پول", "ریفاند",
+    "تاخیر", "دیر شد", "نرسید", "گران", "کلاهبرداری", "دزدی",
+    "وقت تلف", "پشیمان", "اشتباه", "غیرقابل قبول", "زشت",
+    "نمیخوام", "کنسل", "حذف کن", "پس بده", "نمیشه"
+]
 
 ROLE_LEVELS = {
     "owner": 4,
@@ -1045,6 +1057,135 @@ Write a short, concise and readable report (max 500 words)."""
         return "❌ خطا در اتصال به سرویس هوش مصنوعی."
 
 
+async def analyze_dissatisfaction(text: str) -> dict:
+    """تحلیل نارضایتی مشتری با استفاده از AI"""
+    if not OPENAI_API_KEY or not text:
+        return {"is_dissatisfied": False, "reason": "", "severity": 0}
+    
+    # بررسی سریع با کلمات کلیدی
+    text_lower = text.lower()
+    keyword_match = any(kw in text_lower for kw in DISSATISFACTION_KEYWORDS)
+    
+    if not keyword_match:
+        return {"is_dissatisfied": False, "reason": "", "severity": 0}
+    
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.post(
+                "https://api.openai.com/v1/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {OPENAI_API_KEY}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "model": "gpt-4o-mini",
+                    "messages": [
+                        {
+                            "role": "system",
+                            "content": """شما یک تحلیلگر احساسات هستید. پیام زیر را بررسی کنید:
+1. آیا نشان‌دهنده نارضایتی مشتری است؟ (true/false)
+2. دلیل نارضایتی چیست؟ (یک خط)
+3. شدت نارضایتی از 1 تا 5
+
+فقط JSON برگردانید:
+{"is_dissatisfied": true/false, "reason": "...", "severity": 1-5}"""
+                        },
+                        {"role": "user", "content": text[:500]}
+                    ],
+                    "max_tokens": 150,
+                    "temperature": 0.3,
+                }
+            )
+            result = response.json()
+            import json
+            content_text = result["choices"][0]["message"]["content"]
+            return json.loads(content_text)
+    except Exception as e:
+        logger.debug("خطا در تحلیل نارضایتی: %s", e)
+        # اگر API کار نکرد، از تحلیل ساده استفاده کن
+        if keyword_match:
+            return {"is_dissatisfied": True, "reason": "شناسایی با کلمات کلیدی", "severity": 2}
+        return {"is_dissatisfied": False, "reason": "", "severity": 0}
+
+
+async def send_dissatisfaction_alert(context, group_name: str, message_text: str, reason: str, severity: int, sender_name: str):
+    """ارسال اعلان نارضایتی به ادمین‌ها"""
+    try:
+        # دریافت لیست ادمین‌ها
+        res = supabase.table("allowed_users").select("user_id, username").in_(
+            "role", ["owner", "admin"]
+        ).execute()
+        admins = res.data or []
+        
+        severity_emoji = "🟡" if severity <= 2 else "🟠" if severity <= 3 else "🔴"
+        
+        alert_text = f"""
+{severity_emoji} <b>اعلان نارضایتی مشتری</b>
+
+📍 <b>گروه:</b> {group_name}
+👤 <b>فرستنده:</b> {sender_name}
+📝 <b>پیام:</b>
+{message_text[:300]}{"..." if len(message_text) > 300 else ""}
+
+⚠️ <b>دلیل:</b> {reason}
+📊 <b>شدت:</b> {severity}/5
+"""
+        
+        for admin in admins:
+            admin_user_id = admin.get("user_id")
+            if admin_user_id:
+                try:
+                    await context.bot.send_message(
+                        chat_id=admin_user_id,
+                        text=alert_text,
+                        parse_mode="HTML"
+                    )
+                except Exception as e:
+                    logger.debug(f"خطا در ارسال به ادمین {admin_user_id}: {e}")
+    except Exception as e:
+        logger.error("خطا در ارسال اعلان نارضایتی: %s", e)
+
+
+async def generate_quick_report(user_id: int) -> str:
+    """تولید گزارش سریع روزانه"""
+    try:
+        # دریافت لیست گروه‌های کاربر
+        user = await fetch_allowed_user_by_id(user_id)
+        if not user:
+            return "❌ شما دسترسی به این بخش ندارید."
+        
+        groups = user.get("groups") or []
+        if not groups:
+            return "📭 شما به هیچ گروهی دسترسی ندارید."
+        
+        # گزارش ۲۴ ساعت اخیر
+        since = (datetime.utcnow() - timedelta(days=1)).isoformat()
+        
+        report_parts = ["📊 <b>گزارش سریع ۲۴ ساعت اخیر</b>\n"]
+        total_messages = 0
+        
+        for group in groups[:5]:  # حداکثر 5 گروه
+            try:
+                res = supabase.table("messages").select(
+                    "id", count="exact"
+                ).eq("chat_title", group).gte("date", since).execute()
+                
+                count = res.count or 0
+                total_messages += count
+                emoji = "🔥" if count > 50 else "📈" if count > 10 else "📉"
+                report_parts.append(f"{emoji} <b>{group}:</b> {count} پیام")
+            except:
+                pass
+        
+        report_parts.append(f"\n📊 <b>مجموع:</b> {total_messages} پیام")
+        report_parts.append(f"\n🕐 <i>آخرین بروزرسانی: {datetime.now().strftime('%H:%M')}</i>")
+        
+        return "\n".join(report_parts)
+    except Exception as e:
+        logger.error("خطا در تولید گزارش سریع: %s", e)
+        return "⚠️ خطا در تولید گزارش سریع."
+
+
 # ─────────────────────────────────────────────────────────────────
 #  کمکی‌های ادمین
 # ─────────────────────────────────────────────────────────────────
@@ -1396,6 +1537,45 @@ async def text_message_handler(update: Update, context: ContextTypes.DEFAULT_TYP
     
     if text == BUTTON_CANCEL:
         await cancel_handler(update, context)
+        return
+    
+    # گزارش سریع
+    if text == BUTTON_QUICK_REPORT:
+        await context.bot.send_message(
+            chat_id=chat_id,
+            text="⏳ در حال تهیه گزارش سریع..."
+        )
+        report = await generate_quick_report(tg_user.id)
+        await context.bot.send_message(
+            chat_id=chat_id,
+            text=report,
+            parse_mode="HTML"
+        )
+        return
+    
+    # منوی مدیریت
+    if text == BUTTON_MANAGE:
+        allowed = await fetch_allowed_user(tg_user.username) if tg_user.username else None
+        if not allowed or get_user_effective_role(allowed) not in ["owner", "admin"]:
+            await context.bot.send_message(
+                chat_id=chat_id,
+                text="❌ شما دسترسی به بخش مدیریت ندارید."
+            )
+            return
+        
+        keyboard = InlineKeyboardMarkup([
+            [InlineKeyboardButton("👥 مدیریت کاربران", callback_data="admin|users|0")],
+            [InlineKeyboardButton("💬 مدیریت گروه‌ها", callback_data="admin|groups|0")],
+            [InlineKeyboardButton("📊 گزارش‌ها", callback_data="admin|reports")],
+            [InlineKeyboardButton("📝 لاگ فعالیت‌ها", callback_data="admin|audit|0")],
+            [InlineKeyboardButton("⚙️ تنظیمات بات", callback_data="admin|bot_settings")],
+        ])
+        await context.bot.send_message(
+            chat_id=chat_id,
+            text="🔧 <b>پنل مدیریت</b>\n\nیکی از گزینه‌ها را انتخاب کنید:",
+            reply_markup=keyboard,
+            parse_mode="HTML"
+        )
         return
     
     if text == BUTTON_REPORTS:
@@ -2506,16 +2686,52 @@ async def post_init(app):
     logger.info("Bot initialized")
 
 
+async def group_message_monitor(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """مانیتور پیام‌های گروه برای تشخیص نارضایتی"""
+    if not update.message or not update.message.text:
+        return
+    
+    text = update.message.text.strip()
+    if len(text) < 10:  # پیام‌های کوتاه را نادیده بگیر
+        return
+    
+    # بررسی وجود کلمات کلیدی نارضایتی
+    text_lower = text.lower()
+    has_keyword = any(kw in text_lower for kw in DISSATISFACTION_KEYWORDS)
+    
+    if not has_keyword:
+        return
+    
+    # تحلیل نارضایتی با AI
+    analysis = await analyze_dissatisfaction(text)
+    
+    if analysis.get("is_dissatisfied") and analysis.get("severity", 0) >= 2:
+        group_name = update.effective_chat.title or "نامشخص"
+        sender = update.effective_user
+        sender_name = f"{sender.first_name or ''} {sender.last_name or ''}".strip() or sender.username or "ناشناس"
+        
+        await send_dissatisfaction_alert(
+            context=context,
+            group_name=group_name,
+            message_text=text,
+            reason=analysis.get("reason", "شناسایی نارضایتی"),
+            severity=analysis.get("severity", 3),
+            sender_name=sender_name
+        )
+
+
 def main():
     app = ApplicationBuilder().token(TELEGRAM_BOT_TOKEN).post_init(post_init).build()
     
     private_filter = filters.ChatType.PRIVATE & (~filters.COMMAND)
+    group_filter = filters.ChatType.GROUPS & filters.TEXT & (~filters.COMMAND)
 
     app.add_handler(CommandHandler("start", start_handler))
     app.add_handler(CommandHandler("cancel", cancel_handler))
     app.add_handler(CommandHandler("groups", groups_handler))
     app.add_handler(CommandHandler("profile", profile_handler))
     app.add_handler(MessageHandler(private_filter, text_message_handler))
+    app.add_handler(MessageHandler(group_filter, group_message_monitor))  # مانیتور گروه‌ها
     app.add_handler(CallbackQueryHandler(callback_query_handler))
 
     logger.info("Bot starting...")

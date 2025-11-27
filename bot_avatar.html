@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bot Avatar</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: #1a1a2e;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        .avatar-container {
+            width: 512px;
+            height: 512px;
+            position: relative;
+        }
+
+        .avatar {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 
+                0 0 60px rgba(102, 126, 234, 0.5),
+                0 0 120px rgba(118, 75, 162, 0.3),
+                inset 0 0 100px rgba(255, 255, 255, 0.1);
+        }
+
+        .avatar::before {
+            content: '';
+            position: absolute;
+            width: 200%;
+            height: 200%;
+            background: conic-gradient(
+                from 0deg,
+                transparent 0deg,
+                rgba(255, 255, 255, 0.1) 60deg,
+                transparent 120deg
+            );
+            animation: rotate 8s linear infinite;
+        }
+
+        @keyframes rotate {
+            100% { transform: rotate(360deg); }
+        }
+
+        .inner-circle {
+            width: 85%;
+            height: 85%;
+            border-radius: 50%;
+            background: linear-gradient(145deg, #1a1a2e 0%, #16213e 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            z-index: 1;
+            box-shadow: 
+                inset 0 0 50px rgba(102, 126, 234, 0.2),
+                0 10px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        .robot-face {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 30px;
+        }
+
+        .eyes {
+            display: flex;
+            gap: 60px;
+        }
+
+        .eye {
+            width: 70px;
+            height: 70px;
+            background: linear-gradient(180deg, #00d4ff 0%, #667eea 100%);
+            border-radius: 20px;
+            position: relative;
+            box-shadow: 
+                0 0 30px rgba(0, 212, 255, 0.8),
+                0 0 60px rgba(0, 212, 255, 0.4),
+                inset 0 -10px 20px rgba(0, 0, 0, 0.3);
+            animation: glow 2s ease-in-out infinite alternate;
+        }
+
+        .eye::after {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            top: 12px;
+            right: 12px;
+            opacity: 0.8;
+        }
+
+        @keyframes glow {
+            0% { box-shadow: 0 0 30px rgba(0, 212, 255, 0.8), 0 0 60px rgba(0, 212, 255, 0.4); }
+            100% { box-shadow: 0 0 40px rgba(0, 212, 255, 1), 0 0 80px rgba(0, 212, 255, 0.6); }
+        }
+
+        .mouth {
+            width: 120px;
+            height: 8px;
+            background: linear-gradient(90deg, #667eea, #00d4ff, #667eea);
+            border-radius: 4px;
+            position: relative;
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.6);
+        }
+
+        .antenna {
+            position: absolute;
+            top: 60px;
+            width: 8px;
+            height: 50px;
+            background: linear-gradient(180deg, #667eea, #00d4ff);
+            border-radius: 4px;
+        }
+
+        .antenna::after {
+            content: '';
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 20px;
+            height: 20px;
+            background: #00d4ff;
+            border-radius: 50%;
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.8);
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: translateX(-50%) scale(1); opacity: 1; }
+            50% { transform: translateX(-50%) scale(1.2); opacity: 0.8; }
+        }
+
+        .circuit-lines {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            opacity: 0.1;
+        }
+
+        .circuit-lines::before,
+        .circuit-lines::after {
+            content: '';
+            position: absolute;
+            background: #00d4ff;
+        }
+
+        .circuit-lines::before {
+            width: 2px;
+            height: 80px;
+            left: 30%;
+            top: 20%;
+        }
+
+        .circuit-lines::after {
+            width: 80px;
+            height: 2px;
+            right: 20%;
+            bottom: 30%;
+        }
+
+        /* AI text badge */
+        .ai-badge {
+            position: absolute;
+            bottom: 80px;
+            font-size: 48px;
+            font-weight: 900;
+            letter-spacing: 8px;
+            background: linear-gradient(90deg, #00d4ff, #667eea, #f093fb);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 0 30px rgba(0, 212, 255, 0.5);
+        }
+
+        /* Floating particles */
+        .particles {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            border-radius: 50%;
+        }
+
+        .particle {
+            position: absolute;
+            width: 6px;
+            height: 6px;
+            background: #00d4ff;
+            border-radius: 50%;
+            animation: float 4s ease-in-out infinite;
+        }
+
+        .particle:nth-child(1) { left: 20%; top: 30%; animation-delay: 0s; }
+        .particle:nth-child(2) { left: 80%; top: 25%; animation-delay: 0.5s; }
+        .particle:nth-child(3) { left: 15%; top: 70%; animation-delay: 1s; }
+        .particle:nth-child(4) { left: 85%; top: 75%; animation-delay: 1.5s; }
+        .particle:nth-child(5) { left: 50%; top: 15%; animation-delay: 2s; }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) scale(1); opacity: 0.6; }
+            50% { transform: translateY(-20px) scale(1.5); opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <div class="avatar-container">
+        <div class="avatar">
+            <div class="inner-circle">
+                <div class="antenna"></div>
+                <div class="circuit-lines"></div>
+                <div class="particles">
+                    <div class="particle"></div>
+                    <div class="particle"></div>
+                    <div class="particle"></div>
+                    <div class="particle"></div>
+                    <div class="particle"></div>
+                </div>
+                <div class="robot-face">
+                    <div class="eyes">
+                        <div class="eye"></div>
+                        <div class="eye"></div>
+                    </div>
+                    <div class="mouth"></div>
+                </div>
+                <div class="ai-badge">AI</div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+
