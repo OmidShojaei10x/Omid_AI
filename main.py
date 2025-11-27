@@ -58,6 +58,20 @@ logging.basicConfig(
 )
 logger = logging.getLogger("telesummary-bot")
 
+# DEBUG: بررسی نوع API Key
+try:
+    import base64 as b64
+    import json as js
+    _payload = SUPABASE_API_KEY.split('.')[1]
+    _payload += '=' * (4 - len(_payload) % 4)
+    _decoded = js.loads(b64.b64decode(_payload))
+    _api_role = _decoded.get('role', 'unknown')
+    print(f"🔑 SUPABASE API Key Role: {_api_role}")
+    if _api_role == 'anon':
+        print("⚠️ هشدار: از کلید anon استفاده می‌شود!")
+except Exception as _e:
+    print(f"❌ خطا در بررسی API Key: {_e}")
+
 # ─────────────────────────────────────────────────────────────────
 #  ثابت‌ها
 # ─────────────────────────────────────────────────────────────────
@@ -791,10 +805,13 @@ async def clear_pending_mode(user_id: int):
 
 def _db_get_all_users() -> list:
     try:
+        logger.info("📊 در حال دریافت لیست کاربران...")
         res = supabase.table("allowed_users").select("*").order("created_at", desc=False).execute()
-        return res.data or []
+        users = res.data or []
+        logger.info(f"📊 تعداد کاربران: {len(users)}")
+        return users
     except Exception as e:
-        logger.error("خطا در دریافت کاربران: %s", e)
+        logger.error(f"❌ خطا در دریافت کاربران: {e}")
         return []
 
 
