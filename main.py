@@ -1823,7 +1823,7 @@ async def callback_query_handler(update: Update, context: ContextTypes.DEFAULT_T
                 await query.edit_message_text(
                     f"کاربری با نقش {ROLE_LABELS.get(role_key)} نیست.",
                     reply_markup=InlineKeyboardMarkup([
-                        [InlineKeyboardButton("➕ افزودن کاربر", callback_data=f"admin|adduser|{role_key}")],
+                        [InlineKeyboardButton("🟢 ➕ افزودن کاربر", callback_data=f"admin|adduser|{role_key}")],
                         [InlineKeyboardButton("🔙 بازگشت", callback_data="admin|access")],
                     ])
                 )
@@ -1852,7 +1852,7 @@ async def callback_query_handler(update: Update, context: ContextTypes.DEFAULT_T
             if len(nav) > 1:
                 buttons.append(nav)
             
-            buttons.append([InlineKeyboardButton("➕ افزودن کاربر", callback_data=f"admin|adduser|{role_key}")])
+            buttons.append([InlineKeyboardButton("🟢 ➕ افزودن کاربر", callback_data=f"admin|adduser|{role_key}")])
             buttons.append([InlineKeyboardButton("🔙 بازگشت", callback_data="admin|access")])
             
             await query.edit_message_text(
