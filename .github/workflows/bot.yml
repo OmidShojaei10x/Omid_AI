@@ -39,6 +39,25 @@ jobs:
         echo "SUPABASE_API_KEY=${{ secrets.SUPABASE_KEY }}" >> .env
         echo "OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}" >> .env
 
+    - name: Debug - Check API Key Type
+      run: |
+        python3 -c "
+        import os, base64, json
+        api_key = os.getenv('SUPABASE_API_KEY', '')
+        if api_key:
+            try:
+                payload = api_key.split('.')[1]
+                payload += '=' * (4 - len(payload) % 4)
+                decoded = json.loads(base64.b64decode(payload))
+                print(f'✅ API Key Role: {decoded.get(\"role\", \"unknown\")}')
+            except Exception as e:
+                print(f'❌ Could not decode: {e}')
+        else:
+            print('❌ SUPABASE_API_KEY not set')
+        "
+      env:
+        SUPABASE_API_KEY: ${{ secrets.SUPABASE_KEY }}
+
     - name: Run bot
       run: python main.py
 
