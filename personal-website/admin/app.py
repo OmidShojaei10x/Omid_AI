@@ -8,11 +8,15 @@ from flask_cors import CORS
 from functools import wraps
 import os
 import hashlib
+import httpx
 from datetime import datetime
 from dotenv import load_dotenv
 from supabase import create_client, Client
 
 load_dotenv()
+
+# OpenAI API Key
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 app = Flask(__name__)
 app.secret_key = os.getenv('FLASK_SECRET_KEY', 'change-this-secret-key-in-production')
@@ -256,6 +260,59 @@ def delete_skill(skill_id):
     try:
         supabase.table('skills').delete().eq('id', skill_id).execute()
         return jsonify({'success': True, 'message': 'Skill deleted'})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+# ==========================================
+# API Endpoints - Translation (Auto Persian to English)
+# ==========================================
+
+@app.route('/api/translate', methods=['POST'])
+@login_required
+def translate_text():
+    """Translate Persian text to English using OpenAI"""
+    try:
+        if not OPENAI_API_KEY:
+            return jsonify({'success': False, 'error': 'OpenAI API key not configured'}), 500
+        
+        data = request.get_json()
+        text = data.get('text', '')
+        
+        if not text:
+            return jsonify({'success': True, 'translation': ''})
+        
+        # Call OpenAI API
+        response = httpx.post(
+            'https://api.openai.com/v1/chat/completions',
+            headers={
+                'Authorization': f'Bearer {OPENAI_API_KEY}',
+                'Content-Type': 'application/json'
+            },
+            json={
+                'model': 'gpt-4o-mini',
+                'messages': [
+                    {
+                        'role': 'system',
+                        'content': 'You are a translator. Translate the following Persian text to English. Only return the translation, nothing else. Keep the same tone and style.'
+                    },
+                    {
+                        'role': 'user',
+                        'content': text
+                    }
+                ],
+                'temperature': 0.3,
+                'max_tokens': 2000
+            },
+            timeout=30
+        )
+        
+        if response.status_code == 200:
+            result = response.json()
+            translation = result['choices'][0]['message']['content'].strip()
+            return jsonify({'success': True, 'translation': translation})
+        else:
+            return jsonify({'success': False, 'error': f'OpenAI API error: {response.status_code}'}), 500
+            
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 

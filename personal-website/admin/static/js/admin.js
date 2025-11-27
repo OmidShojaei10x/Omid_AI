@@ -15,6 +15,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     loadPersonalInfo();
     loadSkills();
     initModals();
+    initAutoTranslation();
 });
 
 // ==========================================
@@ -34,6 +35,177 @@ document.getElementById('logoutBtn')?.addEventListener('click', async () => {
     await fetch('/admin/logout', { method: 'POST' });
     window.location.href = '/admin/login';
 });
+
+// ==========================================
+// Auto Translation (Persian to English)
+// ==========================================
+
+let translationTimeout = null;
+
+async function translateText(text) {
+    if (!text || text.trim() === '') return '';
+    
+    try {
+        const response = await fetch('/api/translate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            return result.translation;
+        }
+        return '';
+    } catch (error) {
+        console.error('Translation error:', error);
+        return '';
+    }
+}
+
+function initAutoTranslation() {
+    // Map of Persian fields to their English counterparts
+    const translationPairs = [
+        // Post fields
+        { fa: 'post_title_fa', en: 'post_title_en' },
+        { fa: 'post_excerpt_fa', en: 'post_excerpt_en' },
+        { fa: 'post_content_fa', en: 'post_content_en' },
+        { fa: 'post_category_fa', en: 'post_category_en' },
+        // Personal info fields
+        { fa: 'name_fa', en: 'name_en' },
+        { fa: 'title_fa', en: 'title_en' },
+        { fa: 'about_fa', en: 'about_en' },
+    ];
+    
+    translationPairs.forEach(pair => {
+        const faInput = document.getElementById(pair.fa);
+        const enInput = document.getElementById(pair.en);
+        
+        if (faInput && enInput) {
+            // Add translation button
+            addTranslateButton(faInput, enInput);
+            
+            // Auto-translate on blur (when user leaves the field)
+            faInput.addEventListener('blur', async () => {
+                const text = faInput.value.trim();
+                if (text && !enInput.value.trim()) {
+                    enInput.placeholder = '🔄 در حال ترجمه...';
+                    const translation = await translateText(text);
+                    if (translation) {
+                        enInput.value = translation;
+                        enInput.placeholder = '';
+                        showNotification('✅ ترجمه انجام شد');
+                    } else {
+                        enInput.placeholder = '';
+                    }
+                }
+            });
+        }
+    });
+}
+
+function addTranslateButton(faInput, enInput) {
+    // Create a translate button next to the English input
+    const wrapper = enInput.parentElement;
+    if (!wrapper) return;
+    
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'btn-translate';
+    btn.innerHTML = '🔄 ترجمه خودکار';
+    btn.style.cssText = `
+        margin-top: 0.5rem;
+        padding: 0.5rem 1rem;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        border-radius: 8px;
+        color: white;
+        font-size: 0.85rem;
+        cursor: pointer;
+        font-family: inherit;
+        transition: all 0.3s;
+    `;
+    
+    btn.addEventListener('mouseenter', () => {
+        btn.style.transform = 'translateY(-2px)';
+        btn.style.boxShadow = '0 4px 12px rgba(102, 126, 234, 0.4)';
+    });
+    
+    btn.addEventListener('mouseleave', () => {
+        btn.style.transform = 'translateY(0)';
+        btn.style.boxShadow = 'none';
+    });
+    
+    btn.addEventListener('click', async () => {
+        const text = faInput.value.trim();
+        if (!text) {
+            showNotification('⚠️ ابتدا متن فارسی را وارد کنید');
+            return;
+        }
+        
+        btn.innerHTML = '⏳ در حال ترجمه...';
+        btn.disabled = true;
+        
+        const translation = await translateText(text);
+        
+        if (translation) {
+            enInput.value = translation;
+            showNotification('✅ ترجمه انجام شد');
+        } else {
+            showNotification('❌ خطا در ترجمه');
+        }
+        
+        btn.innerHTML = '🔄 ترجمه خودکار';
+        btn.disabled = false;
+    });
+    
+    wrapper.appendChild(btn);
+}
+
+function showNotification(message) {
+    // Remove existing notifications
+    const existing = document.querySelector('.notification');
+    if (existing) existing.remove();
+    
+    const notification = document.createElement('div');
+    notification.className = 'notification';
+    notification.textContent = message;
+    notification.style.cssText = `
+        position: fixed;
+        bottom: 2rem;
+        left: 50%;
+        transform: translateX(-50%);
+        padding: 1rem 2rem;
+        background: rgba(0, 0, 0, 0.9);
+        color: white;
+        border-radius: 12px;
+        font-size: 1rem;
+        z-index: 9999;
+        animation: slideUp 0.3s ease;
+    `;
+    
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        notification.style.animation = 'slideDown 0.3s ease forwards';
+        setTimeout(() => notification.remove(), 300);
+    }, 2000);
+}
+
+// Add animation styles
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes slideUp {
+        from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+        to { opacity: 1; transform: translateX(-50%) translateY(0); }
+    }
+    @keyframes slideDown {
+        from { opacity: 1; transform: translateX(-50%) translateY(0); }
+        to { opacity: 0; transform: translateX(-50%) translateY(20px); }
+    }
+`;
+document.head.appendChild(style);
 
 // ==========================================
 // Navigation
@@ -127,6 +299,7 @@ function openPostModal(post = null) {
     } else {
         title.textContent = 'پست جدید';
         form.reset();
+        document.getElementById('postId').value = '';
         document.getElementById('post_date').value = new Date().toISOString().split('T')[0];
     }
     
@@ -170,6 +343,30 @@ async function deletePost(id) {
 document.getElementById('postForm')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '⏳ در حال ذخیره...';
+    submitBtn.disabled = true;
+    
+    // Auto-translate empty English fields before saving
+    const pairs = [
+        { fa: 'post_title_fa', en: 'post_title_en' },
+        { fa: 'post_excerpt_fa', en: 'post_excerpt_en' },
+        { fa: 'post_content_fa', en: 'post_content_en' },
+        { fa: 'post_category_fa', en: 'post_category_en' },
+    ];
+    
+    for (const pair of pairs) {
+        const faValue = document.getElementById(pair.fa).value.trim();
+        const enInput = document.getElementById(pair.en);
+        if (faValue && !enInput.value.trim()) {
+            const translation = await translateText(faValue);
+            if (translation) {
+                enInput.value = translation;
+            }
+        }
+    }
+    
     const formData = {
         title_fa: document.getElementById('post_title_fa').value,
         title_en: document.getElementById('post_title_en').value,
@@ -200,6 +397,7 @@ document.getElementById('postForm')?.addEventListener('submit', async (e) => {
         if (result.success) {
             closePostModal();
             loadPosts();
+            showNotification('✅ پست ذخیره شد');
         } else {
             alert('خطا در ذخیره پست');
         }
@@ -207,6 +405,9 @@ document.getElementById('postForm')?.addEventListener('submit', async (e) => {
         console.error('Error saving post:', error);
         alert('خطا در ذخیره پست');
     }
+    
+    submitBtn.innerHTML = originalText;
+    submitBtn.disabled = false;
 });
 
 function closePostModal() {
@@ -244,6 +445,29 @@ async function loadPersonalInfo() {
 document.getElementById('personalForm')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '⏳ در حال ذخیره...';
+    submitBtn.disabled = true;
+    
+    // Auto-translate empty English fields
+    const pairs = [
+        { fa: 'name_fa', en: 'name_en' },
+        { fa: 'title_fa', en: 'title_en' },
+        { fa: 'about_fa', en: 'about_en' },
+    ];
+    
+    for (const pair of pairs) {
+        const faValue = document.getElementById(pair.fa).value.trim();
+        const enInput = document.getElementById(pair.en);
+        if (faValue && !enInput.value.trim()) {
+            const translation = await translateText(faValue);
+            if (translation) {
+                enInput.value = translation;
+            }
+        }
+    }
+    
     const formData = {
         name_fa: document.getElementById('name_fa').value,
         name_en: document.getElementById('name_en').value,
@@ -265,7 +489,7 @@ document.getElementById('personalForm')?.addEventListener('submit', async (e) =>
         const result = await response.json();
         
         if (result.success) {
-            alert('✅ اطلاعات با موفقیت ذخیره شد');
+            showNotification('✅ اطلاعات ذخیره شد');
         } else {
             alert('❌ خطا در ذخیره اطلاعات');
         }
@@ -273,6 +497,9 @@ document.getElementById('personalForm')?.addEventListener('submit', async (e) =>
         console.error('Error saving personal info:', error);
         alert('❌ خطا در ذخیره اطلاعات');
     }
+    
+    submitBtn.innerHTML = originalText;
+    submitBtn.disabled = false;
 });
 
 // ==========================================
@@ -338,4 +565,3 @@ window.deleteSkill = async (id) => {
         alert('خطا در حذف مهارت');
     }
 };
-

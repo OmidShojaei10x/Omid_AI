@@ -1,6 +1,6 @@
-# 🤖 Telegram Bot - Omid AI
+# 🤖 ChatInsight AI
 
-A powerful Telegram bot with user management, group permissions, AI-powered reports, and multilingual support.
+A powerful AI-powered Telegram bot for smart group analytics, user management, and automated reporting.
 
 ## ✨ Features
 
