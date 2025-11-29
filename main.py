@@ -1576,6 +1576,17 @@ async def text_message_handler(update: Update, context: ContextTypes.DEFAULT_TYP
     chat_id = update.effective_chat.id
     text = (update.message.text or "").strip()
 
+    # پاسخ سریع به سلام‌های غیررسمی نظیر «ساام»
+    normalized = text.replace(" ", "")
+    greeting_variants = {"ساام", "سلاام", "سلام", "salam", "سلاممم", "سلامممم"}
+    if normalized.lower() in greeting_variants or normalized in greeting_variants:
+        first_name = (tg_user.first_name or tg_user.username or "دوست عزیز").strip()
+        await context.bot.send_message(
+            chat_id=chat_id,
+            text=f"سلام {first_name}! 😊 من همراهتم، هر سوالی داری بپرس."
+        )
+        return
+
     # دکمه‌های منو
     if text == BUTTON_HOME:
         await start_handler(update, context)

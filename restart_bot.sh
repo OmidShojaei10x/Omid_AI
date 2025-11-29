@@ -1,6 +1,9 @@
-#!/bin/zsh
+#!/bin/bash
 # ری‌استارت بات تله‌سامری
+set -euo pipefail
 
-"/Users/omid/Downloads/Omid_Shojaei/bot python/stop_bot.sh"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+"$SCRIPT_DIR/stop_bot.sh"
 sleep 1
-"/Users/omid/Downloads/Omid_Shojaei/bot python/start_bot.sh"
+"$SCRIPT_DIR/start_bot.sh"
