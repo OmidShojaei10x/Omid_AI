@@ -1,9 +1,10 @@
-#!/bin/zsh
-# استارت بات تله‌سامری
+#!/bin/bash
+# استارت بات تلگرام
 
-cd "/Users/omid/Downloads/Omid_Shojaei/bot python" || exit 1
+# رفتن به دایرکتوری اسکریپت
+cd "$(dirname "$0")" || exit 1
 
-# فعال‌کردن venv
+# فعال‌کردن venv (اگر وجود داشته باشد)
 if [ -f "venv/bin/activate" ]; then
   source "venv/bin/activate"
 fi
@@ -20,6 +21,6 @@ if [ -f "bot.pid" ]; then
 fi
 
 # اجرا در پس‌زمینه + ذخیره لاگ
-nohup python main.py > bot.log 2>&1 &
+nohup python3 main.py > bot.log 2>&1 &
 echo $! > bot.pid
 echo "Bot started with PID $(cat bot.pid)"

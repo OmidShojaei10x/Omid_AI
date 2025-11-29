@@ -44,13 +44,6 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 if not TELEGRAM_BOT_TOKEN:
     raise RuntimeError("TELEGRAM_BOT_TOKEN در .env تنظیم نشده است.")
-if not SUPABASE_URL or not SUPABASE_API_KEY:
-    raise RuntimeError("SUPABASE_URL یا SUPABASE_API_KEY در .env تنظیم نشده است.")
-if not OPENAI_API_KEY:
-    logger = logging.getLogger("telesummary-bot")
-    logger.warning("OPENAI_API_KEY تنظیم نشده - قابلیت گزارش AI غیرفعال است.")
-
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_API_KEY)
 
 logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
@@ -58,19 +51,31 @@ logging.basicConfig(
 )
 logger = logging.getLogger("telesummary-bot")
 
-# DEBUG: بررسی نوع API Key
-try:
-    import base64 as b64
-    import json as js
-    _payload = SUPABASE_API_KEY.split('.')[1]
-    _payload += '=' * (4 - len(_payload) % 4)
-    _decoded = js.loads(b64.b64decode(_payload))
-    _api_role = _decoded.get('role', 'unknown')
-    print(f"🔑 SUPABASE API Key Role: {_api_role}")
-    if _api_role == 'anon':
-        print("⚠️ هشدار: از کلید anon استفاده می‌شود!")
-except Exception as _e:
-    print(f"❌ خطا در بررسی API Key: {_e}")
+# Supabase اختیاری است - فقط اگر تنظیم شده باشد استفاده می‌شود
+if SUPABASE_URL and SUPABASE_API_KEY:
+    supabase: Optional[Client] = create_client(SUPABASE_URL, SUPABASE_API_KEY)
+    logger.info("Supabase متصل شد.")
+else:
+    supabase: Optional[Client] = None
+    logger.warning("SUPABASE_URL یا SUPABASE_API_KEY تنظیم نشده - برخی قابلیت‌ها غیرفعال هستند.")
+
+if not OPENAI_API_KEY:
+    logger.warning("OPENAI_API_KEY تنظیم نشده - قابلیت گزارش AI غیرفعال است.")
+
+# DEBUG: بررسی نوع API Key (فقط اگر Supabase تنظیم شده باشد)
+if SUPABASE_API_KEY:
+    try:
+        import base64 as b64
+        import json as js
+        _payload = SUPABASE_API_KEY.split('.')[1]
+        _payload += '=' * (4 - len(_payload) % 4)
+        _decoded = js.loads(b64.b64decode(_payload))
+        _api_role = _decoded.get('role', 'unknown')
+        logger.info(f"🔑 SUPABASE API Key Role: {_api_role}")
+        if _api_role == 'anon':
+            logger.warning("⚠️ هشدار: از کلید anon استفاده می‌شود!")
+    except Exception as _e:
+        logger.debug(f"❌ خطا در بررسی API Key: {_e}")
 
 # ─────────────────────────────────────────────────────────────────
 #  ثابت‌ها
@@ -501,6 +506,8 @@ async def log_worker():
 
 
 def _insert_log_row(row: dict):
+    if supabase is None:
+        return
     try:
         supabase.table("telegram_updates").insert(row).execute()
     except Exception as e:
@@ -1575,6 +1582,14 @@ async def text_message_handler(update: Update, context: ContextTypes.DEFAULT_TYP
     tg_user = update.effective_user
     chat_id = update.effective_chat.id
     text = (update.message.text or "").strip()
+
+    # پاسخ به "ساام"
+    if text.lower() in ["ساام", "سلام", "salam", "salaam"]:
+        await context.bot.send_message(
+            chat_id=chat_id,
+            text="سلام! چطوری؟ 😊"
+        )
+        return
 
     # دکمه‌های منو
     if text == BUTTON_HOME:
