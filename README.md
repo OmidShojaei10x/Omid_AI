@@ -61,15 +61,12 @@ python simple_bot.py
 
 1. Go to your repository → **Settings** → **Secrets and variables** → **Actions**
 
-2. Add these secrets:
-   - `TELEGRAM_BOT_TOKEN`
-   - `SUPABASE_URL`
-   - `SUPABASE_KEY`
-   - `OPENAI_API_KEY`
+2. Add this repository secret:
+   - `TELEGRAM_BOT_TOKEN` ← همون توکن ربات تلگرام
 
 3. Go to **Actions** tab and enable workflows
 
-4. The bot will run automatically!
+4. The bot will run automatically using `simple_bot.py` on every push to `main`, on schedule (هر ۵ ساعت)، یا هر بار که `workflow_dispatch` بزنی. چون GitHub Actions دائمی نیست، هر اجرا حدود ۴.۵ ساعت روشن می‌مونه و اجرای بعدی خودش دوباره شروع می‌شود.
 
 ## 📁 Project Structure
 
