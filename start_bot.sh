@@ -1,11 +1,15 @@
-#!/bin/zsh
-# استارت بات تله‌سامری
+#!/bin/bash
+# استارت بات تلگرام
 
-cd "/Users/omid/Downloads/Omid_Shojaei/bot python" || exit 1
+# رفتن به دایرکتوری اسکریپت
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR" || exit 1
 
-# فعال‌کردن venv
+# فعال‌کردن venv (اگر وجود دارد)
 if [ -f "venv/bin/activate" ]; then
   source "venv/bin/activate"
+elif [ -f ".venv/bin/activate" ]; then
+  source ".venv/bin/activate"
 fi
 
 # اگر قبلاً اجرا شده و pid مونده، کاری نکنیم
@@ -19,7 +23,13 @@ if [ -f "bot.pid" ]; then
   fi
 fi
 
+# بررسی وجود فایل .env
+if [ ! -f ".env" ]; then
+  echo "⚠️ Warning: .env file not found!"
+fi
+
 # اجرا در پس‌زمینه + ذخیره لاگ
-nohup python main.py > bot.log 2>&1 &
+nohup python3 main.py > bot.log 2>&1 &
 echo $! > bot.pid
 echo "Bot started with PID $(cat bot.pid)"
+echo "Logs are being written to bot.log"

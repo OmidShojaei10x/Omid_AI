@@ -44,13 +44,16 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
 if not TELEGRAM_BOT_TOKEN:
     raise RuntimeError("TELEGRAM_BOT_TOKEN در .env تنظیم نشده است.")
-if not SUPABASE_URL or not SUPABASE_API_KEY:
-    raise RuntimeError("SUPABASE_URL یا SUPABASE_API_KEY در .env تنظیم نشده است.")
 if not OPENAI_API_KEY:
     logger = logging.getLogger("telesummary-bot")
-    logger.warning("OPENAI_API_KEY تنظیم نشده - قابلیت گزارش AI غیرفعال است.")
+    logger.warning("OPENAI_API_KEY تنظیم نشده - قابلیت گزارش AI و چت غیرفعال است.")
 
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_API_KEY)
+# Supabase اختیاری است - اگر تنظیم نشده باشد، فقط قابلیت‌های پایه کار می‌کنند
+if SUPABASE_URL and SUPABASE_API_KEY:
+    supabase: Optional[Client] = create_client(SUPABASE_URL, SUPABASE_API_KEY)
+else:
+    logger.warning("SUPABASE_URL یا SUPABASE_API_KEY تنظیم نشده - برخی قابلیت‌ها غیرفعال هستند.")
+    supabase: Optional[Client] = None
 
 logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
@@ -501,6 +504,8 @@ async def log_worker():
 
 
 def _insert_log_row(row: dict):
+    if not supabase:
+        return
     try:
         supabase.table("telegram_updates").insert(row).execute()
     except Exception as e:
@@ -591,6 +596,8 @@ def _build_log_row(update: Update) -> Optional[dict]:
 
 def _db_insert_audit_log(action: str, actor_username: str, target_info: str, details: dict = None):
     """ثبت لاگ تغییرات"""
+    if not supabase:
+        return
     try:
         supabase.table("audit_logs").insert({
             "action": action,
@@ -655,6 +662,8 @@ def can_see_all_groups(user: dict) -> bool:
 # ─────────────────────────────────────────────────────────────────
 
 def _db_fetch_user_by_username(username: str) -> Optional[dict]:
+    if not supabase:
+        return None
     norm = normalize_username(username)
     if not norm:
         return None
@@ -685,6 +694,8 @@ def _db_fetch_user_by_username(username: str) -> Optional[dict]:
 
 
 def _db_fetch_user_by_id(user_id: int) -> Optional[dict]:
+    if not supabase:
+        return None
     try:
         res = supabase.table("allowed_users").select("*").eq(
             "telegram_user_id", user_id
@@ -765,6 +776,8 @@ async def get_accessible_groups_for_user(user: dict) -> list:
 
 
 def _db_pending_set(user_id: int, mode: str):
+    if not supabase:
+        return
     try:
         supabase.table("pending_requests").upsert(
             {"user_id": user_id, "mode": mode}, on_conflict="user_id"
@@ -774,6 +787,8 @@ def _db_pending_set(user_id: int, mode: str):
 
 
 def _db_pending_get(user_id: int) -> Optional[str]:
+    if not supabase:
+        return None
     try:
         res = supabase.table("pending_requests").select("mode").eq(
             "user_id", user_id
@@ -785,6 +800,8 @@ def _db_pending_get(user_id: int) -> Optional[str]:
 
 
 def _db_pending_clear(user_id: int):
+    if not supabase:
+        return
     try:
         supabase.table("pending_requests").delete().eq("user_id", user_id).execute()
     except Exception as e:
@@ -900,6 +917,8 @@ def _db_get_audit_logs(limit: int = 20) -> list:
 
 def _db_get_user_settings(user_id: int) -> dict:
     """دریافت تنظیمات کاربر"""
+    if not supabase:
+        return {}
     try:
         res = supabase.table("user_settings").select("*").eq(
             "telegram_user_id", user_id
@@ -1144,6 +1163,67 @@ async def analyze_dissatisfaction(text: str) -> dict:
         if keyword_match:
             return {"is_dissatisfied": True, "reason": "شناسایی با کلمات کلیدی", "severity": 2}
         return {"is_dissatisfied": False, "reason": "", "severity": 0}
+
+
+# ذخیره تاریخچه چت برای هر کاربر
+user_chat_contexts: dict[int, list] = {}
+
+async def chat_with_user(user_id: int, user_message: str) -> str:
+    """چت با کاربر با استفاده از OpenAI"""
+    if not OPENAI_API_KEY:
+        return "⚠️ سرویس چت در حال حاضر در دسترس نیست."
+    
+    # دریافت یا ایجاد تاریخچه چت کاربر
+    if user_id not in user_chat_contexts:
+        user_chat_contexts[user_id] = [
+            {
+                "role": "system",
+                "content": "شما یک دستیار دوستانه و مفید هستید به نام سام. با کاربر به فارسی و به صورت صمیمی و دوستانه صحبت کنید. پاسخ‌های شما باید کوتاه، مفید و طبیعی باشند."
+            }
+        ]
+    
+    # اضافه کردن پیام کاربر به تاریخچه
+    user_chat_contexts[user_id].append({
+        "role": "user",
+        "content": user_message
+    })
+    
+    # محدود کردن تاریخچه به آخرین 10 پیام (برای صرفه‌جویی در توکن)
+    if len(user_chat_contexts[user_id]) > 20:  # system + 10 user + 10 assistant
+        user_chat_contexts[user_id] = [user_chat_contexts[user_id][0]] + user_chat_contexts[user_id][-19:]
+    
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.post(
+                "https://api.openai.com/v1/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {OPENAI_API_KEY}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "model": "gpt-4o-mini",
+                    "messages": user_chat_contexts[user_id],
+                    "max_tokens": 500,
+                    "temperature": 0.7,
+                }
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                assistant_message = data["choices"][0]["message"]["content"]
+                # اضافه کردن پاسخ به تاریخچه
+                user_chat_contexts[user_id].append({
+                    "role": "assistant",
+                    "content": assistant_message
+                })
+                return assistant_message
+            else:
+                logger.error("خطا در OpenAI API برای چت: %s", response.text)
+                return "❌ متأسفانه خطایی رخ داد. لطفاً دوباره تلاش کنید."
+    
+    except Exception as e:
+        logger.error("خطا در چت: %s", e)
+        return "❌ خطا در اتصال به سرویس چت."
 
 
 async def send_dissatisfaction_alert(context, group_name: str, message_text: str, reason: str, severity: int, sender_name: str):
@@ -1687,6 +1767,42 @@ async def text_message_handler(update: Update, context: ContextTypes.DEFAULT_TYP
 
     if text.startswith("/"):
         return
+
+    # تشخیص "سام" و فعال‌سازی چت
+    text_lower = text.lower().strip()
+    if "سام" in text_lower or text_lower == "sam":
+        # اگر فقط "سام" گفته شده، یک پیام خوش‌آمدگویی بفرست
+        if text_lower in ["سام", "sam"]:
+            await context.bot.send_message(
+                chat_id=chat_id,
+                text="👋 سلام! من سام هستم. چطور می‌تونم کمکتون کنم؟"
+            )
+            # فعال کردن حالت چت برای این کاربر
+            if tg_user.id not in user_chat_contexts:
+                user_chat_contexts[tg_user.id] = [
+                    {
+                        "role": "system",
+                        "content": "شما یک دستیار دوستانه و مفید هستید به نام سام. با کاربر به فارسی و به صورت صمیمی و دوستانه صحبت کنید. پاسخ‌های شما باید کوتاه، مفید و طبیعی باشند."
+                    }
+                ]
+            return
+        else:
+            # اگر "سام" در متن پیام است، پیام را برای چت ارسال کن
+            # حذف "سام" از ابتدای پیام برای پردازش بهتر
+            chat_message = text.replace("سام", "").replace("sam", "").replace("SAM", "").strip()
+            if not chat_message:
+                chat_message = text  # اگر چیزی باقی نماند، کل متن را بفرست
+            
+            # ارسال پیام "در حال تایپ..."
+            await context.bot.send_chat_action(chat_id=chat_id, action="typing")
+            
+            # دریافت پاسخ از چت
+            response = await chat_with_user(tg_user.id, chat_message)
+            await context.bot.send_message(
+                chat_id=chat_id,
+                text=response
+            )
+            return
 
     mode = await get_pending_mode(tg_user.id)
     
