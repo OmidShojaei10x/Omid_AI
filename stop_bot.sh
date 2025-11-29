@@ -23,7 +23,7 @@ if [[ -f "$PID_FILE" ]]; then
   rm -f "$PID_FILE"
 else
   echo "No pid file found. Trying to kill by name..."
-  pkill -f "python3 main.py" 2>/dev/null || true
+  pkill -f "python3 simple_bot.py" 2>/dev/null || true
 fi
 
 echo "Bot stopped (if it was running)."

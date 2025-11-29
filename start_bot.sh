@@ -25,6 +25,6 @@ if [[ -f "$PID_FILE" ]]; then
 fi
 
 # اجرا در پس‌زمینه + ذخیره لاگ
-nohup python3 main.py > "$LOG_FILE" 2>&1 &
+nohup python3 simple_bot.py > "$LOG_FILE" 2>&1 &
 echo $! > "$PID_FILE"
 echo "Bot started with PID $(cat "$PID_FILE")"

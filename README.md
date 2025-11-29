@@ -42,10 +42,20 @@ SUPABASE_KEY=your_supabase_key
 OPENAI_API_KEY=your_openai_api_key
 ```
 
-5. Run the bot:
+5. Run the full bot:
 ```bash
 python main.py
 ```
+
+### 🪄 فقط بات سلام‌گو؟
+
+اگر فقط می‌خواهید یک بات خیلی ساده داشته باشید که وقتی «سلام» یا «ساام» می‌فرستید جواب بدهد، فایل `simple_bot.py` را اجرا کنید:
+
+```bash
+python simple_bot.py
+```
+
+این نسخه فقط به متغیر محیطی `TELEGRAM_BOT_TOKEN` نیاز دارد و خبری از Supabase یا APIهای دیگر نیست.
 
 ### GitHub Actions (Cloud)
 
